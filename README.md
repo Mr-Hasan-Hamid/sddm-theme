@@ -23,6 +23,19 @@ Customized **SilentSDDM** login theme with custom typography, animated video wal
 
 ---
 
+## 🖼️ Previews
+
+### 󰄛 Silvia Preset
+![Silvia Preset](previews/silvia.png)
+
+### 🌸 Rei Preset
+![Rei Preset](previews/rei.png)
+
+### ⚔️ Ken Preset
+![Ken Preset](previews/ken.png)
+
+---
+
 ## 🚀 Quick Install
 
 To install or restore everything onto your system:
