@@ -1,1 +1,1 @@
-zainab ALL=(ALL) NOPASSWD: /usr/local/bin/set-sddm-preset
+ALL ALL=(ALL) NOPASSWD: /usr/local/bin/set-sddm-preset

@@ -36,6 +36,7 @@ sudo chmod 755 /usr/local/bin/set-sddm-preset
 echo -e "\033[1;34m[4/6]\033[0m Configuring passwordless switching rule in /etc/sudoers.d/..."
 sudo cp "${HYPR_SRC}/sudoers.d/sddm-theme-preset" /etc/sudoers.d/sddm-theme-preset
 sudo chmod 440 /etc/sudoers.d/sddm-theme-preset
+sudo chmod 440 /etc/sudoers.d/sddm-theme-preset
 
 # 5. Install Rofi UI and Script to Hyprland configs
 echo -e "\033[1;34m[5/6]\033[0m Installing Rofi menu & Hyprland integration..."

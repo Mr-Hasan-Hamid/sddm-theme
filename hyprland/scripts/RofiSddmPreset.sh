@@ -1,24 +1,50 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #  SDDM Theme Preset Selector for Hyprland
-#  Switches between Silent presets (Silvia, Rei, Ken, Catppuccin, etc.)
+#  Switches between Silent SDDM presets (Silvia, Rei, Ken, Catppuccin, etc.)
 # ==============================================================================
 
 SCRIPTSDIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/scripts"
 ROFI_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/rofi/config-sddm.rasi"
 META="/usr/share/sddm/themes/silent/metadata.desktop"
+THEME_REPO="https://github.com/Mr-Hasan-Hamid/sddm-theme.git"
+
+# Fallback to default rofi config if custom sddm config is absent
+if [[ ! -f "$ROFI_CONFIG" ]]; then
+    ROFI_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/rofi/config.rasi"
+fi
 
 # Refresh wallpaper link for Rofi background theme
 if [[ -x "$SCRIPTSDIR/RofiFocusedWallpaperLink.sh" ]]; then
     "$SCRIPTSDIR/RofiFocusedWallpaperLink.sh" >/dev/null 2>&1 || true
 fi
 
+# If Silent theme is not installed, provide one-click install option
+if [[ ! -d "/usr/share/sddm/themes/silent" ]]; then
+    INSTALL_CHOICE=$(printf "⬇️  Install Silent SDDM Theme & Assets\n❌  Cancel" | rofi -i -dmenu \
+        -p "SDDM Theme" \
+        -mesg "Silent theme is not installed. Would you like to install it?" \
+        -config "$ROFI_CONFIG")
+
+    if [[ "$INSTALL_CHOICE" =~ "Install" ]]; then
+        TERMINAL="${TERMINAL:-$(command -v kitty || command -v alacritty || command -v foot || command -v xterm || echo "")}"
+        INSTALL_CMD="echo '==> Cloning and installing Silent SDDM Theme...'; rm -rf /tmp/sddm-theme && git clone --depth=1 $THEME_REPO /tmp/sddm-theme && cd /tmp/sddm-theme && ./install.sh && echo '==> Done! Press Enter to exit.'; read -r"
+        if [[ "$TERMINAL" =~ kitty ]]; then
+            "$TERMINAL" --hold sh -c "$INSTALL_CMD" &
+        elif [[ -n "$TERMINAL" ]]; then
+            "$TERMINAL" -e sh -c "$INSTALL_CMD" &
+        fi
+    fi
+    exit 0
+fi
+
 # Determine currently active preset
-CURRENT_PRESET="silvia"
+CURRENT_PRESET="default"
 if [[ -f "$META" ]]; then
     CURRENT_LINE=$(grep "^ConfigFile=" "$META" || true)
     if [[ -n "$CURRENT_LINE" ]]; then
-        CURRENT_PRESET=$(basename "$CURRENT_LINE" .conf | sed 's/configs\///')
+        CLEAN_CONFIG="${CURRENT_LINE#ConfigFile=}"
+        CURRENT_PRESET=$(basename "$CLEAN_CONFIG" .conf | sed 's|^configs/||')
     fi
 fi
 
@@ -92,14 +118,44 @@ if [[ "$CLEAN_CHOICE" == "──────────────────
 fi
 
 if [[ "$CLEAN_CHOICE" == "👁️  Test Current in Preview Window" ]]; then
-    notify-send -u low "SDDM" "Launching preview window (Press Esc to close)"
-    sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/silent &
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send -u low "SDDM" "Launching preview window (Press Esc to close)"
+    fi
+    if command -v sddm-greeter-qt6 >/dev/null 2>&1; then
+        QT_IM_MODULE=qtvirtualkeyboard QML2_IMPORT_PATH="/usr/share/sddm/themes/silent/components/" sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/silent &
+    elif command -v sddm-greeter >/dev/null 2>&1; then
+        QT_IM_MODULE=qtvirtualkeyboard QML2_IMPORT_PATH="/usr/share/sddm/themes/silent/components/" sddm-greeter --test-mode --theme /usr/share/sddm/themes/silent &
+    fi
     exit 0
 fi
 
 SELECTED_PRESET="${PRESET_MAP[$CLEAN_CHOICE]}"
 
 if [[ -n "$SELECTED_PRESET" ]]; then
-    sudo /usr/local/bin/set-sddm-preset "$SELECTED_PRESET"
-    notify-send -u normal -i "preferences-desktop-theme" "SDDM Theme" "Switched to: $SELECTED_PRESET\n(Cracked Code & Oriental Chicken applied)"
+    SUCCESS=0
+    if command -v set-sddm-preset >/dev/null 2>&1; then
+        if sudo -n set-sddm-preset "$SELECTED_PRESET" 2>/dev/null; then
+            SUCCESS=1
+        elif command -v pkexec >/dev/null 2>&1 && pkexec set-sddm-preset "$SELECTED_PRESET"; then
+            SUCCESS=1
+        elif sudo set-sddm-preset "$SELECTED_PRESET"; then
+            SUCCESS=1
+        fi
+    elif [[ -w "$META" ]]; then
+        sed -i "s|^ConfigFile=.*|ConfigFile=configs/${SELECTED_PRESET}.conf|" "$META" && SUCCESS=1
+    elif command -v pkexec >/dev/null 2>&1; then
+        pkexec sed -i "s|^ConfigFile=.*|ConfigFile=configs/${SELECTED_PRESET}.conf|" "$META" && SUCCESS=1
+    else
+        sudo sed -i "s|^ConfigFile=.*|ConfigFile=configs/${SELECTED_PRESET}.conf|" "$META" && SUCCESS=1
+    fi
+
+    if [[ $SUCCESS -eq 1 ]]; then
+        if command -v notify-send >/dev/null 2>&1; then
+            notify-send -u normal -i "preferences-desktop-theme" "SDDM Theme" "Switched to: $SELECTED_PRESET"
+        fi
+    else
+        if command -v notify-send >/dev/null 2>&1; then
+            notify-send -u critical -i "dialog-error" "SDDM Theme" "Failed to switch preset to: $SELECTED_PRESET"
+        fi
+    fi
 fi
