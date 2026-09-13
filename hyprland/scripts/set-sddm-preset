@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+PRESET="$1"
+TARGET_CONF="/usr/share/sddm/themes/silent/configs/${PRESET}.conf"
+META="/usr/share/sddm/themes/silent/metadata.desktop"
+
+if [[ -z "$PRESET" ]]; then
+    echo "Usage: set-sddm-preset <preset_name>" >&2
+    exit 1
+fi
+
+if [[ ! -f "$TARGET_CONF" ]]; then
+    echo "Error: Config $TARGET_CONF not found." >&2
+    exit 1
+fi
+
+# Update ConfigFile line in metadata.desktop
+sed -i "s|^ConfigFile=.*|ConfigFile=configs/${PRESET}.conf|" "$META"
+echo "SDDM preset set to: $PRESET"
