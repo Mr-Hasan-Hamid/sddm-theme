@@ -85,3 +85,11 @@ sddm-theme/
 ├── install.sh           # Automated one-click installer
 └── README.md
 ```
+
+---
+
+## 💡 Acknowledgements & Credits
+
+- [SilentSDDM](https://github.com/uiriansan/SilentSDDM) by [@uiriansan](https://github.com/uiriansan) — original Silent theme foundation and customizable QML architecture.
+- [Hyprland](https://github.com/hyprwm/Hyprland) community for typography and lockscreen inspirations.
+
